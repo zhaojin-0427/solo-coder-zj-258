@@ -54,6 +54,18 @@ const Orders = () => {
   };
 
   const handleCreateOrder = async () => {
+    if (!formData.customerName.trim()) {
+      alert('请填写客户姓名');
+      return;
+    }
+    if (!formData.productName.trim()) {
+      alert('请填写产品名称');
+      return;
+    }
+    if (!formData.purpose.trim()) {
+      alert('请填写用途说明');
+      return;
+    }
     try {
       const res = await ordersAPI.create(formData);
       if (res.success) {

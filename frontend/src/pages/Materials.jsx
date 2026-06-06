@@ -56,11 +56,30 @@ const Materials = () => {
   };
 
   const handleCreate = async () => {
+    if (!formData.orderId) {
+      alert('请选择关联订单');
+      return;
+    }
+    if (!formData.material.trim()) {
+      alert('请填写材料名称');
+      return;
+    }
+    const weight = parseFloat(formData.weight);
+    const cost = parseFloat(formData.cost);
+    if (isNaN(weight) || weight <= 0) {
+      alert('请填写有效的用量');
+      return;
+    }
+    if (isNaN(cost) || cost < 0) {
+      alert('请填写有效的成本');
+      return;
+    }
     try {
       const res = await materialsAPI.create({
         ...formData,
-        weight: parseFloat(formData.weight),
-        cost: parseFloat(formData.cost)
+        orderId: parseInt(formData.orderId),
+        weight,
+        cost
       });
       if (res.success) {
         setShowModal(false);
@@ -86,8 +105,8 @@ const Materials = () => {
     }
   };
 
-  const totalCost = records.reduce((sum, r) => sum + r.cost, 0);
-  const uniqueMaterials = [...new Set(records.map(r => r.material))];
+  const totalCost = records.reduce((sum, r) => sum + (isNaN(r.cost) ? 0 : Number(r.cost)), 0);
+  const uniqueMaterials = [...new Set(records.map(r => r.material).filter(m => m && m.trim()))];
 
   return (
     <div>
@@ -105,13 +124,13 @@ const Materials = () => {
                 {s.material}
               </div>
               <div style={{ fontSize: '13px', color: '#b8956e', marginBottom: '4px' }}>
-                累计用量：{s.totalWeight.toFixed(2)} {s.material === '木炭' ? 'kg' : s.material === '木柄' ? '根' : 'kg'}
+                累计用量：{isNaN(s.totalWeight) ? '0.00' : Number(s.totalWeight).toFixed(2)} {s.material === '木炭' ? 'kg' : s.material === '木柄' ? '根' : 'kg'}
               </div>
               <div style={{ fontSize: '13px', color: '#b8956e', marginBottom: '4px' }}>
                 使用次数：{s.count} 次
               </div>
               <div style={{ fontSize: '14px', color: '#daa520', fontWeight: 'bold' }}>
-                总成本：¥{s.totalCost.toFixed(2)}
+                总成本：¥{isNaN(s.totalCost) ? '0.00' : Number(s.totalCost).toFixed(2)}
               </div>
             </div>
           ))}
@@ -164,9 +183,9 @@ const Materials = () => {
                 <td>#{r.id}</td>
                 <td>订单 #{r.orderId}</td>
                 <td>{r.material}</td>
-                <td>{r.weight}</td>
+                <td>{isNaN(r.weight) ? r.weight : Number(r.weight).toFixed(2)}</td>
                 <td>{r.unit}</td>
-                <td style={{ color: '#daa520' }}>¥{r.cost.toFixed(2)}</td>
+                <td style={{ color: '#daa520' }}>¥{isNaN(r.cost) ? '0.00' : Number(r.cost).toFixed(2)}</td>
                 <td>{r.usedDate}</td>
                 <td>{r.supplier}</td>
                 <td>

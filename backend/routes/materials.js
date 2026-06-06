@@ -19,11 +19,12 @@ router.get('/', async (ctx) => {
 router.get('/summary', async (ctx) => {
   const summary = {};
   materialRecords.forEach(r => {
+    if (!r.material) return;
     if (!summary[r.material]) {
       summary[r.material] = { material: r.material, totalWeight: 0, totalCost: 0, count: 0 };
     }
-    summary[r.material].totalWeight += r.weight;
-    summary[r.material].totalCost += r.cost;
+    summary[r.material].totalWeight += isNaN(r.weight) ? 0 : Number(r.weight);
+    summary[r.material].totalCost += isNaN(r.cost) ? 0 : Number(r.cost);
     summary[r.material].count += 1;
   });
   ctx.body = { success: true, data: Object.values(summary) };

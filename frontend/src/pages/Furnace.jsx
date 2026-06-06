@@ -43,7 +43,12 @@ const Furnace = () => {
   const loadCurves = async () => {
     try {
       const res = await curvesAPI.list();
-      if (res.success) setCurves(res.data);
+      if (res.success) {
+        setCurves(res.data);
+        if (res.data.length > 0 && !selectedCurve) {
+          setSelectedCurve(res.data[0]);
+        }
+      }
     } catch (err) {
       console.error(err);
     }
@@ -64,8 +69,18 @@ const Furnace = () => {
   };
 
   const handleCreateRecord = async () => {
+    if (!formData.orderId) {
+      alert('请选择关联订单');
+      return;
+    }
     try {
-      const res = await furnaceAPI.create(formData);
+      const res = await furnaceAPI.create({
+        ...formData,
+        orderId: parseInt(formData.orderId),
+        hammerCount: parseInt(formData.hammerCount) || 0,
+        quenchTiming: parseInt(formData.quenchTiming) || 0,
+        duration: parseInt(formData.duration) || 0
+      });
       if (res.success) {
         setShowModal(false);
         loadRecords();
