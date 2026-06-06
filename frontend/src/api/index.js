@@ -56,12 +56,31 @@ export const statsAPI = {
   furnaceSuccessRate: () => api.get('/stats/furnace-success-rate'),
   forgeCycleDistribution: () => api.get('/stats/forge-cycle-distribution'),
   returningCustomerRate: () => api.get('/stats/returning-customer-rate'),
-  monthlyOrders: () => api.get('/stats/monthly-orders')
+  monthlyOrders: () => api.get('/stats/monthly-orders'),
+  qualityPassRate: () => api.get('/stats/quality-pass-rate'),
+  reworkReasonDistribution: () => api.get('/stats/rework-reason-distribution'),
+  materialReworkRate: () => api.get('/stats/material-rework-rate'),
+  averageReworkCount: () => api.get('/stats/average-rework-count')
 };
 
 export const curvesAPI = {
   list: () => api.get('/curves'),
   get: (material) => api.get(`/curves/${material}`)
+};
+
+export const qualityAPI = {
+  listInspections: (params) => api.get('/quality/inspections', { params }),
+  getInspection: (id) => api.get(`/quality/inspections/${id}`),
+  createInspection: (data) => api.post('/quality/inspections', data),
+  updateInspection: (id, data) => api.put(`/quality/inspections/${id}`, data),
+  removeInspection: (id) => api.delete(`/quality/inspections/${id}`),
+  listReworks: (params) => api.get('/quality/reworks', { params }),
+  getRework: (id) => api.get(`/quality/reworks/${id}`),
+  createRework: (data) => api.post('/quality/reworks', data),
+  updateRework: (id, data) => api.put(`/quality/reworks/${id}`, data),
+  startRework: (id, data) => api.put(`/quality/reworks/${id}/start`, data),
+  completeRework: (id, data) => api.put(`/quality/reworks/${id}/complete`, data),
+  removeRework: (id) => api.delete(`/quality/reworks/${id}`)
 };
 
 export default api;

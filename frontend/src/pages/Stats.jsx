@@ -13,6 +13,10 @@ const Stats = () => {
   const [furnaceRate, setFurnaceRate] = useState([]);
   const [forgeCycle, setForgeCycle] = useState([]);
   const [customerRate, setCustomerRate] = useState(null);
+  const [qualityPassRate, setQualityPassRate] = useState(null);
+  const [reworkReasonDist, setReworkReasonDist] = useState([]);
+  const [materialReworkRate, setMaterialReworkRate] = useState([]);
+  const [avgReworkCount, setAvgReworkCount] = useState(null);
 
   useEffect(() => {
     loadAllStats();
@@ -20,18 +24,26 @@ const Stats = () => {
 
   const loadAllStats = async () => {
     try {
-      const [o, p, f, c, r] = await Promise.all([
+      const [o, p, f, c, r, q, rr, mr, ar] = await Promise.all([
         statsAPI.overview(),
         statsAPI.productTypeDistribution(),
         statsAPI.furnaceSuccessRate(),
         statsAPI.forgeCycleDistribution(),
-        statsAPI.returningCustomerRate()
+        statsAPI.returningCustomerRate(),
+        statsAPI.qualityPassRate(),
+        statsAPI.reworkReasonDistribution(),
+        statsAPI.materialReworkRate(),
+        statsAPI.averageReworkCount()
       ]);
       if (o.success) setOverview(o.data);
       if (p.success) setProductDist(p.data);
       if (f.success) setFurnaceRate(f.data);
       if (c.success) setForgeCycle(c.data);
       if (r.success) setCustomerRate(r.data);
+      if (q.success) setQualityPassRate(q.data);
+      if (rr.success) setReworkReasonDist(rr.data);
+      if (mr.success) setMaterialReworkRate(mr.data);
+      if (ar.success) setAvgReworkCount(ar.data);
     } catch (err) {
       console.error(err);
     }
@@ -42,6 +54,11 @@ const Stats = () => {
     { name: '新客户', value: customerRate.newCustomers }
   ] : [];
 
+  const qualityPieData = qualityPassRate ? [
+    { name: '合格', value: qualityPassRate.passed },
+    { name: '不合格', value: qualityPassRate.failed }
+  ] : [];
+
   return (
     <div>
       <div className="page-header">
@@ -50,7 +67,7 @@ const Stats = () => {
       </div>
 
       {overview && (
-        <div className="stats-grid">
+        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
           <div className="stat-card">
             <div className="stat-value">{overview.totalOrders}</div>
             <div className="stat-label">总订单数</div>
@@ -66,6 +83,14 @@ const Stats = () => {
           <div className="stat-card">
             <div className="stat-value" style={{ color: '#4682b4' }}>{overview.furnaceSuccessRate}%</div>
             <div className="stat-label">炉温控制成功率</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: '#32cd32' }}>{overview.qualityPassRate || 0}%</div>
+            <div className="stat-label">质检合格率</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: '#ff6600' }}>{overview.totalReworks || 0}</div>
+            <div className="stat-label">返工总数 (进行中:{overview.inProgressReworks || 0})</div>
           </div>
         </div>
       )}
@@ -198,6 +223,146 @@ const Stats = () => {
                     </div>
                   </div>
                 </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-title">✅ 质检合格率</div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <ResponsiveContainer width="50%" height={280}>
+              <PieChart>
+                <Pie
+                  data={qualityPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={{ stroke: '#b8956e' }}
+                >
+                  {qualityPieData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={index === 0 ? '#32cd32' : '#cd5c5c'} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ background: '#2c1810', border: '1px solid #8b4513', color: '#f5e6d3' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ flex: 1, padding: '10px' }}>
+              {qualityPassRate && (
+                <>
+                  <div className="info-item" style={{ marginBottom: '12px' }}>
+                    <div className="info-item-label">总质检数</div>
+                    <div className="info-item-value">{qualityPassRate.total}</div>
+                  </div>
+                  <div className="info-item" style={{ marginBottom: '12px' }}>
+                    <div className="info-item-label">合格率</div>
+                    <div className="info-item-value" style={{ color: '#32cd32' }}>
+                      {qualityPassRate.passRate}%
+                    </div>
+                  </div>
+                  <div className="info-item" style={{ marginBottom: '12px' }}>
+                    <div className="info-item-label">不合格数</div>
+                    <div className="info-item-value" style={{ color: '#cd5c5c' }}>
+                      {qualityPassRate.failed}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          {qualityPassRate && qualityPassRate.byMaterial && (
+            <div style={{ marginTop: '10px', fontSize: '13px', color: '#b8956e' }}>
+              各材质合格率：{qualityPassRate.byMaterial.map(m => `${m.material} ${m.rate}%`).join(' | ')}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="card-title">📋 返工原因分布</div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={reworkReasonDist} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="#5c3317" />
+              <XAxis type="number" stroke="#b8956e" allowDecimals={false} />
+              <YAxis dataKey="name" type="category" stroke="#b8956e" width={120} />
+              <Tooltip
+                contentStyle={{ background: '#2c1810', border: '1px solid #8b4513', color: '#f5e6d3' }}
+              />
+              <Legend wrapperStyle={{ color: '#d4a574' }} />
+              <Bar dataKey="value" name="出现次数" fill="#ff6347" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="card">
+          <div className="card-title">📊 不同材质返工率</div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={materialReworkRate}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#5c3317" />
+              <XAxis dataKey="material" stroke="#b8956e" />
+              <YAxis stroke="#b8956e" domain={[0, 100]} />
+              <Tooltip
+                contentStyle={{ background: '#2c1810', border: '1px solid #8b4513', color: '#f5e6d3' }}
+                formatter={(value, name) => {
+                  if (name === 'reworkRate') return [`${value}%`, '返工率'];
+                  return [value, name];
+                }}
+              />
+              <Legend wrapperStyle={{ color: '#d4a574' }} />
+              <Bar dataKey="reworkRate" name="返工率(%)" fill="#ff8c00" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+          <div style={{ marginTop: '12px', fontSize: '13px', color: '#b8956e', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            {materialReworkRate.map(m => (
+              <span key={m.material}>
+                {m.material}: {m.reworked}/{m.total} 件 ({m.reworkRate}%)
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-title">🔄 平均返工次数统计</div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ width: '45%', padding: '10px' }}>
+              {avgReworkCount && (
+                <>
+                  <div className="info-item" style={{ marginBottom: '15px' }}>
+                    <div className="info-item-label">平均返工次数</div>
+                    <div className="info-item-value" style={{ fontSize: '42px', color: '#ffcc66' }}>
+                      {avgReworkCount.averageReworkCount}
+                    </div>
+                  </div>
+                  <div className="info-item" style={{ marginBottom: '12px' }}>
+                    <div className="info-item-label">返工产品总数</div>
+                    <div className="info-item-value">{avgReworkCount.totalReworkedProducts}</div>
+                  </div>
+                  <div className="info-item" style={{ marginBottom: '12px' }}>
+                    <div className="info-item-label">返工操作总次数</div>
+                    <div className="info-item-value">{avgReworkCount.totalReworkOperations}</div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div style={{ width: '55%' }}>
+              {avgReworkCount && avgReworkCount.byType && (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={avgReworkCount.byType} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#5c3317" />
+                    <XAxis type="number" stroke="#b8956e" />
+                    <YAxis dataKey="type" type="category" stroke="#b8956e" width={100} />
+                    <Tooltip
+                      contentStyle={{ background: '#2c1810', border: '1px solid #8b4513', color: '#f5e6d3' }}
+                    />
+                    <Legend wrapperStyle={{ color: '#d4a574' }} />
+                    <Bar dataKey="count" name="返工单数" fill="#9370db" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               )}
             </div>
           </div>

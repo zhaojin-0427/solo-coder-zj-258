@@ -9,6 +9,7 @@ const materialRoutes = require('./routes/materials');
 const productRoutes = require('./routes/products');
 const statsRoutes = require('./routes/stats');
 const curveRoutes = require('./routes/curves');
+const qualityRoutes = require('./routes/quality');
 
 const app = new Koa();
 const router = new Router();
@@ -22,6 +23,7 @@ router.use('/api/materials', materialRoutes.routes(), materialRoutes.allowedMeth
 router.use('/api/products', productRoutes.routes(), productRoutes.allowedMethods());
 router.use('/api/stats', statsRoutes.routes(), statsRoutes.allowedMethods());
 router.use('/api/curves', curveRoutes.routes(), curveRoutes.allowedMethods());
+router.use('/api/quality', qualityRoutes.routes(), qualityRoutes.allowedMethods());
 
 app.use(router.routes());
 app.use(router.allowedMethods());

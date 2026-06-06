@@ -4,6 +4,7 @@ import Orders from './pages/Orders.jsx';
 import Furnace from './pages/Furnace.jsx';
 import Materials from './pages/Materials.jsx';
 import Products from './pages/Products.jsx';
+import Quality from './pages/Quality.jsx';
 import Stats from './pages/Stats.jsx';
 
 const App = () => {
@@ -12,6 +13,7 @@ const App = () => {
     { path: '/furnace', label: '炉温记录', icon: '🔥' },
     { path: '/materials', label: '用料台账', icon: '⚒️' },
     { path: '/products', label: '成品档案', icon: '🗡️' },
+    { path: '/quality', label: '质检返工', icon: '🔍' },
     { path: '/stats', label: '数据统计', icon: '📊' }
   ];
 
@@ -39,6 +41,7 @@ const App = () => {
           <Route path="/furnace" element={<Furnace />} />
           <Route path="/materials" element={<Materials />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/quality" element={<Quality />} />
           <Route path="/stats" element={<Stats />} />
         </Routes>
       </main>
