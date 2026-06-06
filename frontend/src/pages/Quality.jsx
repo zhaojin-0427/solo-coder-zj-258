@@ -106,6 +106,16 @@ const Quality = () => {
   };
 
   const handleSaveRework = async () => {
+    if (!editingRework) {
+      if (!reworkForm.productId) {
+        alert('请选择需要返工的产品');
+        return;
+      }
+      if (!reworkForm.reworkReason || !reworkForm.reworkReason.trim()) {
+        alert('请填写返工原因');
+        return;
+      }
+    }
     try {
       let res;
       if (editingRework) {

@@ -126,6 +126,16 @@ router.get('/reworks/:id', async (ctx) => {
 
 router.post('/reworks', async (ctx) => {
   const body = ctx.request.body;
+  if (!body.productId) {
+    ctx.status = 400;
+    ctx.body = { success: false, message: '请选择需要返工的产品' };
+    return;
+  }
+  if (!body.reworkReason || !body.reworkReason.toString().trim()) {
+    ctx.status = 400;
+    ctx.body = { success: false, message: '请填写返工原因' };
+    return;
+  }
   const product = products.find(p => p.id === body.productId);
   const inspection = body.qualityInspectionId ? qualityInspections.find(q => q.id === body.qualityInspectionId) : null;
 
@@ -162,12 +172,23 @@ router.put('/reworks/:id', async (ctx) => {
     return;
   }
   const updateData = { ...ctx.request.body };
-  if (updateData.status === '返工中' && !reworkRecords[index].startedDate) {
+  const oldStatus = reworkRecords[index].status;
+  const newStatus = updateData.status;
+
+  if (newStatus === '返工中' && oldStatus !== '返工中' && !reworkRecords[index].startedDate) {
     updateData.startedDate = new Date().toISOString().split('T')[0];
     updateData.reworkCount = (reworkRecords[index].reworkCount || 0) + 1;
   }
-  if (updateData.status === '已完成' && !reworkRecords[index].completedDate) {
-    updateData.completedDate = new Date().toISOString().split('T')[0];
+  if (newStatus === '已完成' && oldStatus !== '已完成') {
+    if (!reworkRecords[index].completedDate) {
+      updateData.completedDate = new Date().toISOString().split('T')[0];
+    }
+    if (!reworkRecords[index].startedDate && !updateData.startedDate) {
+      updateData.startedDate = reworkRecords[index].startedDate || new Date().toISOString().split('T')[0];
+    }
+    if ((reworkRecords[index].reworkCount || 0) === 0 && !updateData.reworkCount) {
+      updateData.reworkCount = 1;
+    }
   }
   reworkRecords[index] = { ...reworkRecords[index], ...updateData };
   ctx.body = { success: true, data: reworkRecords[index], message: '返工记录更新成功' };

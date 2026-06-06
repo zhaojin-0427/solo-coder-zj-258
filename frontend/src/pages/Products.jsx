@@ -142,7 +142,8 @@ const Products = () => {
     if (!selectedProduct) return;
     try {
       const furnaceRec = furnaceRecords.find(f => f.orderId === selectedProduct.orderId);
-      const res = await qualityAPI.createInspection({
+      const existingInspection = inspections.find(i => i.productId === selectedProduct.id);
+      const payload = {
         productId: selectedProduct.id,
         orderId: selectedProduct.orderId,
         furnaceRecordId: furnaceRec ? furnaceRec.id : null,
@@ -154,7 +155,10 @@ const Products = () => {
         sharpnessMeasured: parseInt(inspectionForm.sharpnessMeasured),
         hardnessMin: parseInt(inspectionForm.hardnessMin),
         hardnessMax: parseInt(inspectionForm.hardnessMax)
-      });
+      };
+      const res = existingInspection
+        ? await qualityAPI.updateInspection(existingInspection.id, payload)
+        : await qualityAPI.createInspection(payload);
       if (res.success) {
         setShowInspectionModal(false);
         loadProducts();
@@ -169,7 +173,33 @@ const Products = () => {
     if (!selectedProduct) return;
     try {
       const furnaceRec = furnaceRecords.find(f => f.orderId === selectedProduct.orderId);
-      const existingInspection = inspections.find(i => i.productId === selectedProduct.id);
+      let existingInspection = inspections.find(i => i.productId === selectedProduct.id);
+      if (!existingInspection) {
+        const inspRes = await qualityAPI.createInspection({
+          productId: selectedProduct.id,
+          orderId: selectedProduct.orderId,
+          furnaceRecordId: furnaceRec ? furnaceRec.id : null,
+          productName: selectedProduct.productName,
+          serialNumber: selectedProduct.serialNumber,
+          material: selectedProduct.material,
+          ...inspectionForm,
+          appearanceScore: parseInt(inspectionForm.appearanceScore),
+          sharpnessMeasured: parseInt(inspectionForm.sharpnessMeasured),
+          hardnessMin: parseInt(inspectionForm.hardnessMin),
+          hardnessMax: parseInt(inspectionForm.hardnessMax)
+        });
+        if (inspRes.success) {
+          existingInspection = inspRes.data;
+        }
+      } else {
+        await qualityAPI.updateInspection(existingInspection.id, {
+          ...inspectionForm,
+          appearanceScore: parseInt(inspectionForm.appearanceScore),
+          sharpnessMeasured: parseInt(inspectionForm.sharpnessMeasured),
+          hardnessMin: parseInt(inspectionForm.hardnessMin),
+          hardnessMax: parseInt(inspectionForm.hardnessMax)
+        });
+      }
       const res = await qualityAPI.createRework({
         productId: selectedProduct.id,
         orderId: selectedProduct.orderId,
@@ -184,6 +214,8 @@ const Products = () => {
       });
       if (res.success) {
         setShowInspectionModal(false);
+        loadProducts();
+        loadInspections();
         alert('返工记录已创建，请前往质检返工页面查看');
       }
     } catch (err) {
